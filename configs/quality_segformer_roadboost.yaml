@@ -1,0 +1,108 @@
+# Finetune SegFormer с усилением road / track_path / impassable.
+# Стартует с весов quality_segformer_b4 (finetune_from), optimizer с нуля.
+
+experiment_name: quality_segformer_roadboost
+seed: 42
+
+data:
+  dataset_root: dataset
+  index_csv: dataset/dataset_index.csv
+  classes_config: configs/dataset_classes.yaml
+  class_balance_json: reports/class_balance.json
+  target_domain: clean_render
+  train_kinds: [tile]
+  val_kinds: [tile]
+  test_kinds: [tile]
+  image_size: 512
+  num_workers: 8
+  pin_memory: true
+  persistent_workers: true
+  prefetch_factor: 2
+  native_resolution: true
+
+model:
+  architecture: segformer
+  encoder_name: mit_b4
+  encoder_weights: imagenet
+  in_channels: 3
+  classes: 16
+  pretrained_name: nvidia/mit-b4
+
+loss:
+  ce_weight: 0.4
+  dice_weight: 0.4
+  lovasz_weight: 0.2
+  class_weight_mode: effective_number
+  effective_beta: 0.9999
+  weight_clip_min: 0.25
+  # выше clip, чтобы boost не упирался в 10
+  weight_clip_max: 25.0
+  empty_class_weight: 0.0
+  # множители поверх effective_number
+  class_weight_boost:
+    road: 3.0
+    track_path: 2.0
+    impassable: 1.5
+    footpath: 1.25
+
+train:
+  epochs: 80
+  batch_size: 4
+  grad_accumulation: 2
+  # ниже LR — дообучение, не обучение с нуля
+  lr: 3.0e-5
+  encoder_lr_factor: 0.1
+  weight_decay: 1.0e-2
+  warmup_epochs: 2
+  scheduler: poly
+  poly_power: 0.9
+  amp: true
+  amp_dtype: float16
+  ema: true
+  ema_decay: 0.999
+  early_stopping_patience: 20
+  log_every: 50
+  vis_every_epochs: 5
+  checkpoint_dir: checkpoints
+  runs_dir: runs
+  resume: null
+  # только веса модели; путь поправьте при необходимости
+  finetune_from: checkpoints/quality_segformer_b4/best.pt
+
+augment:
+  horizontal_flip: 0.5
+  vertical_flip: 0.5
+  random_rotate90: 0.5
+  shift_scale_rotate:
+    p: 0.4
+    shift_limit: 0.06
+    scale_limit: 0.1
+    rotate_limit: 15
+  brightness_contrast:
+    p: 0.3
+    brightness_limit: 0.1
+    contrast_limit: 0.1
+  hue_saturation:
+    p: 0.2
+    hue_shift_limit: 5
+    sat_shift_limit: 10
+    val_shift_limit: 10
+  # Симуляция фото: defocus / смаз камеры + JPEG.
+  blur:
+    p: 0.4
+    gaussian_limit: [3, 7]
+    motion_limit: 7
+  jpeg_compression:
+    p: 0.3
+    quality_range: [55, 95]
+
+infer:
+  window: 512
+  step: 256
+  blend: gaussian
+  tta: true
+  batch_size: 2
+
+eval:
+  exclude_background: true
+  exclude_empty_classes: true

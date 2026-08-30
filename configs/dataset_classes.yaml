@@ -1,0 +1,66 @@
+# Таксономия и приоритет свёртки channels→index (как в пайплайне датасета).
+# Синхронно с DATASET.md (16 классов, C в channels.npy).
+
+classes:
+  0: background
+  1: forest_run
+  2: open_land
+  3: semi_open
+  4: green_slow
+  5: green_hard
+  6: water
+  7: marsh
+  8: road
+  9: track_path
+  10: paved_settlement
+  11: contours
+  12: impassable
+  13: footpath
+  14: cycle_path
+  15: control_point
+
+label_priority:
+  - control_point
+  - impassable
+  - water
+  - road
+  - track_path
+  - footpath
+  - cycle_path
+  - contours
+  - green_hard
+  - green_slow
+  - marsh
+  - paved_settlement
+  - semi_open
+  - open_land
+  - forest_run
+  - background
+
+# Классы без пикселей в текущем датасете — каналы оставляем, из метрик/весов исключаем.
+empty_classes:
+  - forest_run
+  - marsh
+  - cycle_path
+
+# Критичные для поиска пути (логирование IoU отдельно).
+critical_classes:
+  - road
+  - track_path
+  - footpath
+  - impassable
+  - contours
+  - open_land
+  - green_slow
+  - green_hard
+  - water
+  - control_point
+
+# Линейные классы для пост-обработки связности.
+linear_classes:
+  - road
+  - track_path
+  - footpath
+  - cycle_path
+  - impassable
+  - contours

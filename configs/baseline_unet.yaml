@@ -1,0 +1,99 @@
+# M2 baseline: U-Net + EfficientNet-B4, clean OCAD renders.
+
+experiment_name: baseline_unet_effb4
+seed: 42
+
+data:
+  dataset_root: dataset
+  index_csv: dataset/dataset_index.csv
+  classes_config: configs/dataset_classes.yaml
+  class_balance_json: reports/class_balance.json
+  # clean_render | photo | both
+  target_domain: clean_render
+  train_kinds: [tile]
+  val_kinds: [tile]
+  test_kinds: [tile]
+  image_size: 512
+  num_workers: 8
+  pin_memory: true
+  persistent_workers: true
+  prefetch_factor: 2
+  # Не ресемплировать к общему м/px — нативное разрешение рендера.
+  native_resolution: true
+
+model:
+  architecture: unet
+  encoder_name: efficientnet-b4
+  encoder_weights: imagenet
+  in_channels: 3
+  classes: 16
+
+loss:
+  ce_weight: 0.5
+  dice_weight: 0.5
+  lovasz_weight: 0.0
+  # effective_number | inverse_freq | none
+  class_weight_mode: effective_number
+  effective_beta: 0.9999
+  weight_clip_min: 0.25
+  weight_clip_max: 10.0
+  empty_class_weight: 0.0
+
+train:
+  epochs: 100
+  batch_size: 8
+  grad_accumulation: 1
+  lr: 2.0e-4
+  encoder_lr_factor: 0.1
+  weight_decay: 1.0e-4
+  warmup_epochs: 3
+  scheduler: cosine
+  amp: true
+  amp_dtype: float16
+  ema: true
+  ema_decay: 0.999
+  early_stopping_patience: 20
+  log_every: 50
+  vis_every_epochs: 5
+  checkpoint_dir: checkpoints
+  runs_dir: runs
+  resume: null
+
+augment:
+  horizontal_flip: 0.5
+  vertical_flip: 0.5
+  random_rotate90: 0.5
+  shift_scale_rotate:
+    p: 0.4
+    shift_limit: 0.06
+    scale_limit: 0.1
+    rotate_limit: 15
+  # Слабая фотометрия: цвет ISOM семантичен.
+  brightness_contrast:
+    p: 0.3
+    brightness_limit: 0.1
+    contrast_limit: 0.1
+  hue_saturation:
+    p: 0.2
+    hue_shift_limit: 5
+    sat_shift_limit: 10
+    val_shift_limit: 10
+  # Симуляция фото: defocus / смаз камеры + JPEG.
+  blur:
+    p: 0.4
+    gaussian_limit: [3, 7]
+    motion_limit: 7
+  jpeg_compression:
+    p: 0.3
+    quality_range: [55, 95]
+
+infer:
+  window: 512
+  step: 256
+  blend: gaussian
+  tta: false
+  batch_size: 4
+
+eval:
+  exclude_background: true
+  exclude_empty_classes: true
