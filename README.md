@@ -4,6 +4,11 @@ Python pipeline for processing orienteering maps: semantic segmentation,
 control-point detection, terrain-aware pathfinding, and score-orienteering route
 planning.
 
+Video demo is here:
+[![](http://img.youtube.com/vi/9jue2MCP1d4/0.jpg)](https://youtu.be/9jue2MCP1d4 "")
+
+
+
 ## Repository contents
 
 - `src/` — segmentation, control detection, routing, and route optimization;
