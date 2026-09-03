@@ -445,6 +445,8 @@ def find_start_triangle(
     ref_size: float | None = None,
     exclude_xy: Sequence[tuple[float, float]] | None = None,
     exclude_radius: float = 25.0,
+    search_xy: tuple[float, float] | None = None,
+    search_radius: float | None = None,
 ) -> tuple[float, float, float, float] | None:
     """
     Розовый треугольник старта/финиша (обычно один, ≈ размер кружка КП).
@@ -505,6 +507,14 @@ def find_start_triangle(
             continue
         cx = float(m["m10"] / m["m00"])
         cy = float(m["m01"] / m["m00"])
+
+        # При наличии черновой VLM-координаты сравнивать только локальные
+        # кандидаты. Иначе похожий треугольный знак/логотип в другой части
+        # большой карты может победить по score, после чего настоящий старт
+        # рядом с VLM-точкой уже не рассматривается.
+        if search_xy is not None and search_radius is not None:
+            if np.hypot(cx - search_xy[0], cy - search_xy[1]) > search_radius:
+                continue
 
         if exclude_xy:
             if any(np.hypot(cx - ex, cy - ey) < exclude_radius for ex, ey in exclude_xy):

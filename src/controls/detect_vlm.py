@@ -497,21 +497,22 @@ def detect_controls_vlm_trace(
             sx, sy, sc = max(start_cands, key=lambda t: t[2])
             side = 0.0
             if pink is not None:
+                start_search_radius = (
+                    float(start_search_radius_px)
+                    if start_search_radius_px is not None
+                    else max(40.0, ref_size)
+                )
                 tri = find_start_triangle(
                     pink,
                     ref_size=ref_size,
                     exclude_xy=[(c.x, c.y) for c in controls],
                     exclude_radius=exclude_r,
+                    search_xy=(sx, sy),
+                    search_radius=start_search_radius,
                 )
                 if tri is not None:
                     tx, ty, tscore, tside = tri
-                    start_search_radius = (
-                        float(start_search_radius_px)
-                        if start_search_radius_px is not None
-                        else max(40.0, ref_size)
-                    )
-                    if np.hypot(tx - sx, ty - sy) < start_search_radius:
-                        sx, sy, sc, side = tx, ty, max(sc, tscore), tside
+                    sx, sy, sc, side = tx, ty, max(sc, tscore), tside
             start = StartFinish(x=float(sx), y=float(sy), score=float(sc), side=float(side))
         elif pink is not None:
             tri = find_start_triangle(
